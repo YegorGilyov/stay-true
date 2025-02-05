@@ -34,7 +34,7 @@ def chunk_text(text, chunk_size=1000, overlap=100):
 
 def get_llm_response(claim: str, doc: str) -> str:
     client = OpenAI(
-        api_key='sk-proj-G5n4WmWBwTv12TvP_sQZTELTJuGVIvDIrH_C2RWnKXIUHW1HZLTO8k0WqxMiOPLW0Qn0czZwIdT3BlbkFJ8uMhP_I-0tmWlgmVZ3KWgLiI_63YqLcGh6XSaFBLPafbWlciTKPOVYDemoxxZTi4iJjbnYmzwA'
+        api_key=st.secrets["openai_key"]
     )
     
     prompt = f"""Based on the following document, please tell if the claim contains something that explicitly contradicts the document."
