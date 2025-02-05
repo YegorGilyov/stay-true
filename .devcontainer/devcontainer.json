@@ -29,5 +29,10 @@
   },
   "forwardPorts": [
     8501
-  ]
+  ],
+  "features": {
+      "ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
+          "packages": "sqlite3"
+      }
+  }
 }
