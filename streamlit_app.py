@@ -126,10 +126,9 @@ if uploaded_files and (file_names != st.session_state.processed_files):
         print(f"An error occurred: {e}")
 
 elif st.session_state.processed_files:
-    st.subheader("Step 2: adding documents to the vector database")
+    st.subheader("Step 2: adding documents to the vector database'")
     for msg in st.session_state.messages:
         st.write(msg)
-
 
 if st.session_state.processed_files:
     st.success(f"Hooray! We've collected a knowledge base of {len(st.session_state.processed_files)} documents.")
@@ -185,8 +184,12 @@ if st.session_state.processed_files:
                 source = diverse_results['metadatas'][i]['source']
                 title = diverse_results['metadatas'][i]['title']
                 llm_response = get_llm_response(claim, doc)
-                
-                st.write(f"* {title}&rarr; *{llm_response}*")
+                if "No contradiction" in llm_response:
+                    st.success(f"{title}&rarr; *{llm_response}*")
+                elif "Not relevant" in llm_response:
+                    st.info(f"{title}&rarr; *{llm_response}*")
+                else:
+                    st.error(f"{title}&rarr; *{llm_response}*")
 
         except httpx.ReadTimeout as e:
             print("Timeout error occurred. Try using a VPN or check your internet connection.")
