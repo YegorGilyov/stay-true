@@ -9,8 +9,8 @@ from chromadb.config import Settings
 import httpx
 from sentence_transformers import SentenceTransformer
 from openai import OpenAI
+import pandas as pd
 from documents import DOCUMENTS
-
 
 def chunk_text(text, chunk_size=1000, overlap=100):
     """Split text into overlapping chunks"""
@@ -93,20 +93,30 @@ collection = chroma_client.create_collection(
 
 st.title("Stay true!")
 
-try:
-    # Process and add each document
-    for i, doc in enumerate(DOCUMENTS):
-        chunks = chunk_text(doc)
-        collection.add(
-            documents=chunks,
-            ids=[f"doc_{i}_chunk_{j}" for j in range(len(chunks))],
-            metadatas=[{"source": f"document_{i}", "title": doc.strip().split('\n')[0]} for _ in chunks]
-        )
-        print(f"Added {len(chunks)} chunks from document {i}")
+st.subheader("Step 1: uploading documents")
 
-    claim = st.text_input("Enter your claim:")
+uploaded_files = st.file_uploader("Choose files", accept_multiple_files=True, type=['txt'])
 
-    if claim != "":
+st.subheader("Step 2: making a claim")
+
+claim = st.text_input("Enter your claim:")
+
+if uploaded_files and (claim !=""): # and not st.session_state.processed_docs:
+    try:
+        st.subheader("Step 3: adding documents to the vector database")
+        # Process and add each document
+        for i, uploaded_file in enumerate(uploaded_files):
+            doc = uploaded_file.getvalue().decode("utf-8")
+            chunks = chunk_text(doc)
+            collection.add(
+                documents=chunks,
+                ids=[f"doc_{i}_chunk_{j}" for j in range(len(chunks))],
+                metadatas=[{"source": f"document_{i}", "title": doc.strip().split('\n')[0]} for _ in chunks]
+            )
+            st.write(f"Added {len(chunks)} chunks from file {uploaded_file.name}")
+
+        st.subheader("Step 4: search for relevant documents")
+
         results = collection.query(
             query_texts=[claim],
             n_results=20,
@@ -137,10 +147,10 @@ try:
                 diverse_results['distances'].append(distance)
                 diverse_results['ids'].append(doc_id)
                 diverse_results['metadatas'].append(metadata)
+                st.write(f"{metadata['title']} / distance: {distance:.4f}")
 
-        print("\nClaim:", claim)
-        
-        print("\nQuery Results (sorted by relevance):")
+        st.subheader("Step 5: determining if there are discrepancies")
+
         for i, (doc, distance, doc_id) in enumerate(zip(
             diverse_results['documents'],
             diverse_results['distances'],
@@ -149,18 +159,13 @@ try:
             source = diverse_results['metadatas'][i]['source']
             title = diverse_results['metadatas'][i]['title']
             llm_response = get_llm_response(claim, doc)
-            print(f"\n{i+1}. Document (id: {doc_id}):")
-            print(f"   Title: {title}")
-            print(f"   Distance: {distance:.4f}")
-            print(f"   Source: {source}")
-            print(f"   LLM Response: {llm_response}")
+            
+            st.write(title)
+            st.write(llm_response)
             st.write("---")
-            st.write(f"Title: {title}")
-            st.write(f"Distance: {distance:.4f}")
-            st.write(f"LLM Response: {llm_response}")
 
-except httpx.ReadTimeout as e:
-    print("Timeout error occurred. Try using a VPN or check your internet connection.")
-    print(f"Error details: {e}")
-except Exception as e:
-    print(f"An error occurred: {e}")
+    except httpx.ReadTimeout as e:
+        print("Timeout error occurred. Try using a VPN or check your internet connection.")
+        print(f"Error details: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")

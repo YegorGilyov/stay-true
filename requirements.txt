@@ -3,3 +3,4 @@ sentence-transformers
 openai
 chromadb
 pysqlite3-binary
+panda
